@@ -1,0 +1,17 @@
+[package]
+name = "unwarp"
+version = "1.0.0"
+edition = "2024"
+description = "A minimal, ergonomic wrapper around warp — define routes, attach handlers, and serve. No boilerplate, no filter chains."
+license = "MIT"
+authors = ["Soumyo Deep Gupta <deep.main.ac@gmail.com>"]
+readme = "README.md"
+repository = "https://github.com/d33p0st/unwarp"
+homepage = "https://github.com/d33p0st/unwarp"
+documentation = "https://docs.rs/unwarp"
+keywords = ["warp", "http", "web", "router", "server"]
+categories = ["web-programming::http-server", "network-programming"]
+
+[dependencies]
+serde = "1.0.228"
+warp = { version = "0.4.2", features = ["server"] }
