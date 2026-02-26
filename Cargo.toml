@@ -1,6 +1,6 @@
 [package]
 name = "unwarp"
-version = "1.2.0"
+version = "1.2.1"
 edition = "2024"
 description = "A minimal, ergonomic wrapper around warp — define routes, attach handlers, and serve. No boilerplate, no filter chains."
 license = "MIT"

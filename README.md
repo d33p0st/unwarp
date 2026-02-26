@@ -25,7 +25,7 @@ A minimal, ergonomic wrapper around [`warp`](https://github.com/seanmonstar/warp
 
 ```toml
 [dependencies]
-unwarp = "1.2.0"
+unwarp = "1.2.1"
 ```
 
 ---

@@ -358,7 +358,6 @@ impl Unwarp {
     }
 }
 
-
 #[macro_export]
 /// Convenience macro with three forms:
 ///
@@ -375,7 +374,8 @@ impl Unwarp {
 macro_rules! unwarp {
     ($status: expr, json => $json: expr) => {{
         use crate::Unwarp;
-        Unwarp::with_status($status, warp::reply::json(&$json))
+        use warp::reply::json;
+        Unwarp::with_status($status, json(&$json))
     }};
 
     ($status: expr, $reply: expr) => {{
