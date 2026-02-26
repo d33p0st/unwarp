@@ -2,6 +2,10 @@ use std::{future::Future, net::SocketAddr};
 use serde::{de::DeserializeOwned, Serialize};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
+/// Re-exported so the `unwarp!` macro can reference `$crate::warp` without
+/// requiring downstream crates to add `warp` to their own `Cargo.toml`.
+pub use warp;
+
 /// A fully type-erased warp route whose output has been normalised to
 /// [`warp::reply::Response`].  Produced by the `handle` methods on
 /// [`RouteBuilder`], [`JsonRouteBuilder`] and [`QueryRouteBuilder`].
@@ -186,7 +190,7 @@ impl<T: DeserializeOwned + Send + 'static> QueryRouteBuilder<T> {
 }
 
 
-/// HTTP status codes — use with [`Wrapper::with_status`].
+/// HTTP status codes — use with [`Unwarp::with_status`] or [`Unwarp::json_with_status`].
 #[derive(Clone, Copy, Debug)]
 pub enum Status {
     // 2xx
@@ -254,7 +258,7 @@ impl From<Status> for warp::http::StatusCode {
 /// ```rust
 /// use serde::Deserialize;
 /// use warp::Rejection;
-/// use backend_relay::prelude::*;
+/// use unwarp::prelude::*;
 ///
 /// #[derive(Deserialize)]
 /// struct Payload { name: String }
@@ -356,7 +360,28 @@ impl Unwarp {
     pub fn json<T: Serialize>(value: &T) -> Result<impl Reply, Rejection> {
         Ok::<_, Rejection>(warp::reply::json(value))
     }
+
+    /// Convenience constructor that serialises `value` as JSON **and** wraps it
+    /// with the given [`Status`] code in a single call.
+    ///
+    /// Equivalent to `Unwarp::with_status(status, warp::reply::json(value))`.
+    ///
+    /// # Example
+    /// ```rust
+    /// RouteBuilder::post("users")
+    ///     .json::<Payload>()
+    ///     .handle(|p: Payload| async move {
+    ///         Unwarp::json_with_status(Status::Created, &p)
+    ///     });
+    /// ```
+    pub fn json_with_status<T: Serialize>(status: Status, value: &T) -> Result<impl Reply, Rejection> {
+        Ok::<_, Rejection>(warp::reply::with_status(
+            warp::reply::json(value),
+            status.into(),
+        ))
+    }
 }
+
 
 #[macro_export]
 /// Convenience macro with three forms:
@@ -373,19 +398,15 @@ impl Unwarp {
 /// ```
 macro_rules! unwarp {
     ($status: expr, json => $json: expr) => {{
-        use crate::Unwarp;
-        use warp::reply::json;
-        Unwarp::with_status($status, json(&$json))
+        $crate::Unwarp::with_status($status, $crate::warp::reply::json(&$json))
     }};
 
     ($status: expr, $reply: expr) => {{
-        use crate::Unwarp;
-        Unwarp::with_status($status, $reply)
+        $crate::Unwarp::with_status($status, $reply)
     }};
 
     ($json: expr) => {{
-        use crate::Unwarp;
-        Unwarp::json(&$json)
+        $crate::Unwarp::json(&$json)
     }};
 }
 

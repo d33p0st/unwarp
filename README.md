@@ -25,16 +25,20 @@ A minimal, ergonomic wrapper around [`warp`](https://github.com/seanmonstar/warp
 
 ```toml
 [dependencies]
-unwarp = "1.2.1"
+unwarp = "2.0.0"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
+
+> `unwarp` re-exports `warp` internally. You do **not** need to add `warp` to your own `Cargo.toml`.
 
 ---
 
 ## Quick-start
 
 ```rust
-use unwarp::prelude::*;
-use warp::Rejection;
+use unwarp::prelude::*;  // also brings `warp` module into scope
 
 #[tokio::main]
 async fn main() {
@@ -43,7 +47,7 @@ async fn main() {
     server.route(
         RouteBuilder::get("ping")
             .handle(|| async {
-                Ok::<_, Rejection>(warp::reply::html("pong"))
+                Ok::<_, warp::Rejection>(warp::reply::html("pong"))
             })
     );
 
@@ -58,9 +62,11 @@ async fn main() {
 ### Plain route (no body / no query params)
 
 ```rust
+use unwarp::prelude::*;
+
 RouteBuilder::get("hello")
     .handle(|| async {
-        Ok::<_, Rejection>(warp::reply::html("Hello, world!"))
+        Ok::<_, warp::Rejection>(warp::reply::html("Hello, world!"))
     });
 ```
 
@@ -70,6 +76,7 @@ Declare the expected body type with `.json::<T>()`. `T` must implement `serde::D
 
 ```rust
 use serde::Deserialize;
+use unwarp::prelude::*;
 
 #[derive(Deserialize)]
 struct CreateUser { name: String, email: String }
@@ -77,7 +84,7 @@ struct CreateUser { name: String, email: String }
 RouteBuilder::post("users")
     .json::<CreateUser>()
     .handle(|body: CreateUser| async move {
-        Ok::<_, Rejection>(warp::reply::json(&body.name))
+        Ok::<_, warp::Rejection>(warp::reply::json(&body.name))
     });
 ```
 
@@ -87,6 +94,7 @@ Declare the query-string type with `.query::<T>()`. `T` must implement `serde::D
 
 ```rust
 use serde::Deserialize;
+use unwarp::prelude::*;
 
 #[derive(Deserialize)]
 struct Search { q: String, limit: Option<u32> }
@@ -94,7 +102,7 @@ struct Search { q: String, limit: Option<u32> }
 RouteBuilder::get("search")
     .query::<Search>()
     .handle(|params: Search| async move {
-        Ok::<_, Rejection>(warp::reply::json(&params.q))
+        Ok::<_, warp::Rejection>(warp::reply::json(&params.q))
     });
 ```
 
@@ -131,6 +139,24 @@ RouteBuilder::delete("items/42")
 RouteBuilder::get("config")
     .handle(|| async {
         Unwarp::json(&serde_json::json!({ "version": "1.0" }))
+    });
+```
+
+### `Unwarp::json_with_status`
+
+Serialises a value as JSON **and** sets the status code in one call. Useful for `201 Created`, `202 Accepted`, etc.
+
+```rust
+use serde::Serialize;
+use unwarp::prelude::*;
+
+#[derive(Serialize)]
+struct Created { id: u64 }
+
+RouteBuilder::post("items")
+    .json::<()>()
+    .handle(|_| async move {
+        Unwarp::json_with_status(Status::Created, &Created { id: 42 })
     });
 ```
 
@@ -189,8 +215,7 @@ A typed representation of common HTTP status codes, convertible to `warp::http::
 
 ```rust
 use serde::{Deserialize, Serialize};
-use unwarp::prelude::*;
-use warp::Rejection;
+use unwarp::prelude::*;  // brings Unwarp, RouteBuilder, Status, unwarp!, and warp into scope
 
 #[derive(Deserialize, Serialize)]
 struct Message { text: String }
@@ -210,12 +235,12 @@ async fn main() {
             })
     );
 
-    // POST /echo  — JSON body
+    // POST /echo  — JSON body, returns 201 Created
     server.route(
         RouteBuilder::post("echo")
             .json::<Message>()
             .handle(|msg: Message| async move {
-                Unwarp::json(&msg)
+                Unwarp::json_with_status(Status::Created, &msg)
             })
     );
 
@@ -242,6 +267,7 @@ Import everything you need in one line:
 ```rust
 use unwarp::prelude::*;
 // re-exports: Unwarp, unwarp!, RouteBuilder, Status
+// also re-exports: warp  (so warp::reply::*, warp::Rejection, etc. work without a warp dep)
 ```
 
 ---
