@@ -372,6 +372,11 @@ macro_rules! unwarp {
         use crate::Unwarp;
         Unwarp::json(&$json)
     }};
+
+    ($status: expr, $json: expr) => {{
+        use crate::Unwarp;
+        Unwarp::with_status($status, warp::reply::json(&$json))
+    }};
 }
 
 pub mod prelude;
