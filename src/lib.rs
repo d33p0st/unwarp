@@ -360,9 +360,24 @@ impl Unwarp {
 
 
 #[macro_export]
-/// Convenience macro for `Unwarp::with_status` — use as `unwarp!(Status::Ok, "reply body")`.
-/// Also supports `unwarp!(my_json_value)` as a shorthand for `Unwarp::json(&my_json_value)`.
+/// Convenience macro with three forms:
+///
+/// - `unwarp!(status, json => value)` — serialise `value` as JSON and wrap with status.
+/// - `unwarp!(status, reply)` — wrap any `warp::Reply` with status.
+/// - `unwarp!(json_value)` — shorthand for `Unwarp::json(&json_value)`.
+///
+/// # Examples
+/// ```rust
+/// unwarp!(Status::Created, json => &my_struct)
+/// unwarp!(Status::Ok, warp::reply::html("pong"))
+/// unwarp!(my_struct)
+/// ```
 macro_rules! unwarp {
+    ($status: expr, json => $json: expr) => {{
+        use crate::Unwarp;
+        Unwarp::with_status($status, warp::reply::json(&$json))
+    }};
+
     ($status: expr, $reply: expr) => {{
         use crate::Unwarp;
         Unwarp::with_status($status, $reply)
@@ -371,11 +386,6 @@ macro_rules! unwarp {
     ($json: expr) => {{
         use crate::Unwarp;
         Unwarp::json(&$json)
-    }};
-
-    ($status: expr, $json: expr) => {{
-        use crate::Unwarp;
-        Unwarp::with_status($status, warp::reply::json(&$json))
     }};
 }
 

@@ -25,7 +25,7 @@ A minimal, ergonomic wrapper around [`warp`](https://github.com/seanmonstar/warp
 
 ```toml
 [dependencies]
-unwarp = "1.0.0"
+unwarp = "1.2.0"
 ```
 
 ---
@@ -139,12 +139,17 @@ RouteBuilder::get("config")
 The `unwarp!` macro is a shorthand for the two helpers above:
 
 ```rust
-// equivalent to Unwarp::with_status(Status::Created, warp::reply::json(&item))
-unwarp!(Status::Created, warp::reply::json(&item))
+// Serialise value as JSON and wrap with a status code
+unwarp!(Status::Created, json => &item)
 
-// equivalent to Unwarp::json(&value)
-unwarp!(value)
+// Wrap any warp::Reply (html, plain text, etc.) with a status code
+unwarp!(Status::Ok, warp::reply::html("pong"))
+
+// Shorthand for Unwarp::json(&value)
+unwarp!(my_struct)
 ```
+
+> **Why `json =>`?** Both `unwarp!(status, json_val)` and `unwarp!(status, string_val)` look identical to the macro engine — it matches on token structure, not types. The `json =>` keyword discriminator makes the two arms syntactically distinct so the right one is always chosen.
 
 ---
 
